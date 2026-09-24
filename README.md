@@ -7,7 +7,7 @@ InstanceMate is an AI troubleshooting assistant for ServiceNow. Users log in wit
 ```mermaid
 flowchart LR
     Browser["Browser (React + Tailwind)"]
-    Backend["Backend (FastAPI)"]
+    Backend["Backend (Flask)"]
     LiteLLM["LiteLLM"]
     MCP["MCP server"]
     SN["ServiceNow REST API"]
@@ -22,7 +22,7 @@ flowchart LR
 
 ## Planned stack
 
-- **Backend**: Python, FastAPI
+- **Backend**: Python, Flask
 - **LLM routing**: LiteLLM (OpenAI / Anthropic / Google, BYOK)
 - **Tooling**: MCP server (Python) exposing ServiceNow REST operations
 - **Data**: Postgres + pgvector for the knowledge base, local embedding model
@@ -32,7 +32,7 @@ flowchart LR
 ## Repo layout
 
 ```
-backend/      FastAPI backend
+backend/      Flask backend
 mcp-server/   MCP server exposing ServiceNow tools
 frontend/     React + Tailwind frontend
 infra/        Deployment / infrastructure config
