@@ -1,0 +1,62 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  lint-and-test:
+    name: Lint & test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Check for Python code
+        id: pycheck
+        run: |
+          if find . -name '*.py' -not -path './.git/*' | grep -q .; then
+            echo "found=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "found=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Install ruff
+        if: steps.pycheck.outputs.found == 'true'
+        run: pip install ruff
+
+      - name: Ruff lint
+        if: steps.pycheck.outputs.found == 'true'
+        run: ruff check .
+
+      - name: Install project + test deps
+        if: steps.pycheck.outputs.found == 'true'
+        run: |
+          for dir in backend mcp-server; do
+            if [ -f "$dir/requirements.txt" ]; then
+              pip install -r "$dir/requirements.txt"
+            fi
+            if [ -f "$dir/pyproject.toml" ]; then
+              pip install "./$dir"
+            fi
+          done
+          pip install pytest
+
+      - name: Run tests
+        if: steps.pycheck.outputs.found == 'true'
+        run: |
+          if find . -path '*/tests/*' -name 'test_*.py' -not -path './.git/*' | grep -q .; then
+            pytest
+          else
+            echo "No tests found yet, skipping."
+          fi
+
+      - name: No Python code yet
+        if: steps.pycheck.outputs.found == 'false'
+        run: echo "No Python code found yet, skipping lint and tests."

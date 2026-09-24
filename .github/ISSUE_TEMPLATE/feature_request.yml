@@ -1,0 +1,42 @@
+name: Feature request
+description: Suggest an idea or improvement for InstanceMate
+title: "[feature]: "
+labels: ["type:feature"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What problem are you trying to solve? Is it related to something you find frustrating or missing today?
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed solution
+      description: Describe the solution you'd like.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Any alternative solutions or features you've considered.
+    validations:
+      required: false
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - backend
+        - mcp-server
+        - kb/rag
+        - frontend
+        - auth
+        - infra
+    validations:
+      required: true

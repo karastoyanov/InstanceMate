@@ -216,3 +216,53 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# ---------------------------------------------------------------------------
+# InstanceMate additions
+# ---------------------------------------------------------------------------
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.pnpm-store/
+.npm/
+dist/
+.next/
+.nuxt/
+.turbo/
+
+# Environment files (keep the example)
+.env*
+!.env.example
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Docker
+docker-compose.override.yml
+*.local.yml
+volumes/
+pgdata/
+
+# Local model / embedding caches
+.cache/
+models/
+*.gguf
+*.safetensors
+sentence-transformers/
+huggingface/
+.hf_cache/
+
+# macOS
+.DS_Store
+
+# Local project instructions (not shared/pushed)
+CLAUDE.md
+

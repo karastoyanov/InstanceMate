@@ -1,0 +1,52 @@
+name: ServiceNow MCP tool request
+description: Request a new MCP tool for querying/acting on a ServiceNow instance
+title: "[mcp-tool]: "
+labels: ["type:feature", "area:mcp-server"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this to request a new tool the MCP server should expose for interacting with a ServiceNow instance.
+
+  - type: input
+    id: tables
+    attributes:
+      label: Target table(s)
+      description: The ServiceNow table(s) this tool would operate on, e.g. incident, cmdb_ci, sys_user
+      placeholder: incident, task
+    validations:
+      required: true
+
+  - type: input
+    id: api
+    attributes:
+      label: Required API
+      description: The ServiceNow REST API this tool would call, e.g. Table API, Aggregate API, Attachment API
+    validations:
+      required: true
+
+  - type: textarea
+    id: use-case
+    attributes:
+      label: Use case
+      description: What troubleshooting scenario does this tool support? Give a concrete example.
+    validations:
+      required: true
+
+  - type: input
+    id: roles
+    attributes:
+      label: Required roles
+      description: The minimum ServiceNow role(s) needed to call this API/table, e.g. itil, admin
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: read-only
+    attributes:
+      label: Read-only confirmation
+      options:
+        - label: This tool is read-only and will not create, update, or delete data on the instance.
+          required: false
+        - label: This tool performs a write/mutating action and I understand it requires extra review before being added.
+          required: false

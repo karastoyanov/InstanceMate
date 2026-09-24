@@ -1,0 +1,63 @@
+# Labels for this repo, applied via `gh label create` (see .github/scripts/create-labels.sh).
+# This file is the source of truth; the script reads it if you have `yq` installed,
+# otherwise apply the same list manually with `gh label create`.
+
+- name: "type:bug"
+  color: "d73a4a"
+  description: "Something isn't working"
+
+- name: "type:feature"
+  color: "a2eeef"
+  description: "New feature or request"
+
+- name: "type:docs"
+  color: "0075ca"
+  description: "Documentation only changes"
+
+- name: "type:chore"
+  color: "c5def5"
+  description: "Tooling, CI, dependencies, repo maintenance"
+
+- name: "area:backend"
+  color: "5319e7"
+  description: "FastAPI backend"
+
+- name: "area:mcp-server"
+  color: "5319e7"
+  description: "MCP server / ServiceNow tools"
+
+- name: "area:kb"
+  color: "5319e7"
+  description: "Knowledge base / RAG / pgvector"
+
+- name: "area:frontend"
+  color: "5319e7"
+  description: "React + Tailwind frontend"
+
+- name: "area:auth"
+  color: "5319e7"
+  description: "Instance login, OAuth/basic auth, sessions"
+
+- name: "area:infra"
+  color: "5319e7"
+  description: "Deployment, VPS, Docker, CI/CD"
+
+- name: "priority:high"
+  color: "b60205"
+  description: "High priority"
+
+- name: "priority:medium"
+  color: "fbca04"
+  description: "Medium priority"
+
+- name: "priority:low"
+  color: "0e8a16"
+  description: "Low priority"
+
+- name: "good first issue"
+  color: "7057ff"
+  description: "Good for newcomers"
+
+- name: "security"
+  color: "ee0701"
+  description: "Security-related issue or fix"
