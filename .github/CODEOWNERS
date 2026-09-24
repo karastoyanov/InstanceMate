@@ -1,0 +1,9 @@
+# Default owner for everything in the repo
+* @karastoyanov
+
+# Component owners
+/backend/       @karastoyanov
+/mcp-server/    @karastoyanov
+/frontend/      @karastoyanov
+/infra/         @karastoyanov
+/.github/       @karastoyanov
