@@ -20,7 +20,7 @@
 
 - name: "area:backend"
   color: "5319e7"
-  description: "FastAPI backend"
+  description: "Flask backend"
 
 - name: "area:mcp-server"
   color: "5319e7"
