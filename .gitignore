@@ -263,3 +263,6 @@ huggingface/
 # macOS
 .DS_Store
 
+# Local project instructions (not shared/pushed)
+CLAUDE.md
+
