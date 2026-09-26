@@ -41,7 +41,30 @@ docs/         Additional documentation
 
 ## Getting started
 
-TBD
+Prerequisites: Python 3.12+ and Node.js 20+ (with npm).
+
+### Backend (Flask)
+
+```bash
+cd backend
+python3 -m venv venv               # create an isolated Python environment
+source venv/bin/activate           # activate it (Windows: venv\Scripts\activate)
+pip install -r requirements.txt    # install Flask + dev/test tooling
+cp ../.env.example .env            # copy env template, fill in values you need locally
+flask run                          # start the dev server at http://127.0.0.1:5000
+```
+
+Check it's up with `curl http://127.0.0.1:5000/health`. Other useful commands from `backend/`: `pytest` (run tests) and `ruff check .` (lint).
+
+### Frontend (Vite + React + Tailwind)
+
+```bash
+cd frontend
+npm install     # install dependencies
+npm run dev     # start the dev server at http://localhost:5173
+```
+
+Other useful commands from `frontend/`: `npm run build` (production build), `npm run lint` (ESLint), `npm run format` (Prettier, writes changes).
 
 ## Contributing
 
