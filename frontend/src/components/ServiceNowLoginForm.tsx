@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react'
-import { ApiError, startServiceNowLogin } from '../lib/api'
+import { ApiError, startServiceNowLogin } from '../services/api'
 
 const INSTANCE_URL_PATTERN =
   /^https:\/\/[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.service-now\.com$/i

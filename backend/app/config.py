@@ -9,7 +9,9 @@ class Config:
 
     # Backend's own externally-reachable base URL, used to build the fixed
     # OAuth redirect_uri registered in the user's ServiceNow instance.
-    APP_BASE_URL = os.environ.get("APP_BASE_URL", "http://127.0.0.1:5000")
+    # Uses the same hostname as FRONTEND_URL (localhost, not 127.0.0.1) so
+    # the session cookie is same-site across the OAuth redirect round-trip.
+    APP_BASE_URL = os.environ.get("APP_BASE_URL", "http://localhost:5000")
     # Frontend origin: allowed for CORS and used as the post-login redirect target.
     FRONTEND_URL = os.environ.get("FRONTEND_URL", "http://localhost:5173")
 

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { logout } from '../lib/api'
+import { logout } from '../services/api'
 
 interface ConnectedPanelProps {
   instanceUrl: string

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import ConnectedPanel from '../components/ConnectedPanel'
 import ServiceNowLoginForm from '../components/ServiceNowLoginForm'
-import { getAuthStatus } from '../lib/api'
+import { getAuthStatus } from '../services/api'
 
 const ERROR_MESSAGES: Record<string, string> = {
   sn_denied: 'ServiceNow declined the authorization request.',
