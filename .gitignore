@@ -2,9 +2,6 @@
 *.db
 *.sqlite3
 
-# Alembic migrations (generated locally via `flask db init`/`migrate`)
-backend/migrations/
-
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]
