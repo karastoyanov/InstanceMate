@@ -66,6 +66,18 @@ npm run dev     # start the dev server at http://localhost:5173
 
 Other useful commands from `frontend/`: `npm run build` (production build), `npm run lint` (ESLint), `npm run format` (Prettier, writes changes).
 
+### MCP server
+
+```bash
+cd mcp-server
+python3 -m venv venv               # create an isolated Python environment
+source venv/bin/activate           # activate it (Windows: venv\Scripts\activate)
+pip install -r requirements.txt    # install the MCP SDK + dev/test tooling
+python run.py                      # start the server at http://127.0.0.1:8001/mcp
+```
+
+Only exposes a trivial `ping` tool for now (proves the wiring); real ServiceNow tools land in follow-up issues. Other useful commands from `mcp-server/`: `pytest` (run tests) and `ruff check .` (lint).
+
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md).
