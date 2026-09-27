@@ -3,5 +3,8 @@ python-dotenv==1.2.2
 requests==2.34.2
 flask-cors==6.0.5
 cryptography==50.0.1
+Flask-SQLAlchemy==3.1.1
+Flask-Migrate==4.1.0
+psycopg[binary]==3.3.6
 pytest==9.0.3
 ruff==0.16.9

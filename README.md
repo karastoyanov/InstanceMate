@@ -54,7 +54,7 @@ cp ../.env.example .env            # copy env template, fill in values you need 
 flask run                          # start the dev server at http://127.0.0.1:5000
 ```
 
-Check it's up with `curl http://127.0.0.1:5000/health`. Other useful commands from `backend/`: `pytest` (run tests) and `ruff check .` (lint).
+Check it's up with `curl http://127.0.0.1:5000/health`. Other useful commands from `backend/`: `pytest` (run tests), `ruff check .` (lint), and `flask db upgrade` (apply DB migrations - not required to start, since `DATABASE_URL` falls back to a local SQLite file if you skip the `.env` copy above). For real Postgres locally: `docker compose -f infra/docker-compose.yml up -d`.
 
 ### Frontend (Vite + React + Tailwind)
 
