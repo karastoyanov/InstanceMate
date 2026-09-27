@@ -1,13 +1,14 @@
 import { useState, type FormEvent } from 'react'
-import { ApiError, startBasicLogin } from '../services/api'
+import { ApiError, createServiceNowBasicProfile } from '../services/api'
 import { normalizeInstanceUrl } from '../utils/serviceNowInstanceUrl'
 import { formInputClass } from './formStyles'
 
-interface BasicAuthLoginFormProps {
-  onConnected: (instanceUrl: string) => void
+interface AddServiceNowBasicFormProps {
+  onCreated: () => void
 }
 
-function BasicAuthLoginForm({ onConnected }: BasicAuthLoginFormProps) {
+function AddServiceNowBasicForm({ onCreated }: AddServiceNowBasicFormProps) {
+  const [label, setLabel] = useState('')
   const [instanceUrl, setInstanceUrl] = useState('')
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
@@ -25,6 +26,10 @@ function BasicAuthLoginForm({ onConnected }: BasicAuthLoginFormProps) {
       )
       return
     }
+    if (!label.trim()) {
+      setError('Give this instance a name')
+      return
+    }
     if (!username.trim() || !password) {
       setError('Username and password are required')
       return
@@ -32,12 +37,13 @@ function BasicAuthLoginForm({ onConnected }: BasicAuthLoginFormProps) {
 
     setIsSubmitting(true)
     try {
-      const result = await startBasicLogin({
+      await createServiceNowBasicProfile({
+        label: label.trim(),
         instanceUrl: trimmedUrl,
         username: username.trim(),
         password,
       })
-      onConnected(result.instance_url ?? trimmedUrl)
+      onCreated()
     } catch (err) {
       setError(
         err instanceof ApiError
@@ -55,6 +61,24 @@ function BasicAuthLoginForm({ onConnected }: BasicAuthLoginFormProps) {
         OAuth is the preferred, more secure way to connect. Only use basic auth
         if your instance doesn't have an OAuth application registered.
       </p>
+
+      <div className="flex flex-col gap-1.5">
+        <label
+          htmlFor="basicLabel"
+          className="text-sm font-medium text-foreground"
+        >
+          Name
+        </label>
+        <input
+          id="basicLabel"
+          type="text"
+          autoComplete="off"
+          placeholder="e.g. Acme Dev"
+          value={label}
+          onChange={(event) => setLabel(event.target.value)}
+          className={formInputClass}
+        />
+      </div>
 
       <div className="flex flex-col gap-1.5">
         <label
@@ -120,10 +144,10 @@ function BasicAuthLoginForm({ onConnected }: BasicAuthLoginFormProps) {
         disabled={isSubmitting}
         className="mt-2 w-full rounded-md border border-border px-4 py-2.5 text-sm font-semibold text-foreground transition hover:bg-surface disabled:cursor-not-allowed disabled:opacity-60"
       >
-        {isSubmitting ? 'Signing in…' : 'Sign in with username & password'}
+        {isSubmitting ? 'Adding…' : 'Add instance'}
       </button>
     </form>
   )
 }
 
-export default BasicAuthLoginForm
+export default AddServiceNowBasicForm

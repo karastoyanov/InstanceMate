@@ -1,9 +1,10 @@
 import { useState, type FormEvent } from 'react'
-import { ApiError, startServiceNowLogin } from '../services/api'
+import { ApiError, startServiceNowOAuthProfile } from '../services/api'
 import { normalizeInstanceUrl } from '../utils/serviceNowInstanceUrl'
 import { formInputClass } from './formStyles'
 
-function OAuthLoginForm() {
+function AddServiceNowOAuthForm() {
+  const [label, setLabel] = useState('')
   const [instanceUrl, setInstanceUrl] = useState('')
   const [clientId, setClientId] = useState('')
   const [clientSecret, setClientSecret] = useState('')
@@ -21,6 +22,10 @@ function OAuthLoginForm() {
       )
       return
     }
+    if (!label.trim()) {
+      setError('Give this instance a name')
+      return
+    }
     if (!clientId.trim() || !clientSecret.trim()) {
       setError('Client ID and Client Secret are required')
       return
@@ -29,7 +34,8 @@ function OAuthLoginForm() {
     setIsSubmitting(true)
     try {
       const { authorization_url: authorizationUrl } =
-        await startServiceNowLogin({
+        await startServiceNowOAuthProfile({
+          label: label.trim(),
           instanceUrl: trimmedUrl,
           clientId: clientId.trim(),
           clientSecret: clientSecret.trim(),
@@ -47,6 +53,21 @@ function OAuthLoginForm() {
 
   return (
     <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-4">
+      <div className="flex flex-col gap-1.5">
+        <label htmlFor="label" className="text-sm font-medium text-foreground">
+          Name
+        </label>
+        <input
+          id="label"
+          type="text"
+          autoComplete="off"
+          placeholder="e.g. Acme Prod"
+          value={label}
+          onChange={(event) => setLabel(event.target.value)}
+          className={formInputClass}
+        />
+      </div>
+
       <div className="flex flex-col gap-1.5">
         <label
           htmlFor="instanceUrl"
@@ -117,4 +138,4 @@ function OAuthLoginForm() {
   )
 }
 
-export default OAuthLoginForm
+export default AddServiceNowOAuthForm

@@ -1,9 +1,12 @@
 import { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import BasicAuthLoginForm from '../components/BasicAuthLoginForm'
-import ConnectedPanel from '../components/ConnectedPanel'
-import OAuthLoginForm from '../components/OAuthLoginForm'
-import { getAuthStatus, type AuthType } from '../services/api'
+import AddServiceNowProfileForm from '../components/AddServiceNowProfileForm'
+import ServiceNowProfileList from '../components/ServiceNowProfileList'
+import {
+  ApiError,
+  listServiceNowProfiles,
+  type ServiceNowProfile,
+} from '../services/api'
 
 const ERROR_MESSAGES: Record<string, string> = {
   sn_denied: 'ServiceNow declined the authorization request.',
@@ -13,23 +16,14 @@ const ERROR_MESSAGES: Record<string, string> = {
     'ServiceNow did not return an authorization code. Please try again.',
   token_exchange_failed:
     'ServiceNow rejected the token exchange. Check your Client ID/Secret.',
-}
-
-const FOOTER_TEXT: Record<AuthType, string> = {
-  oauth:
-    'Your credentials are exchanged directly with your ServiceNow instance via OAuth — InstanceMate never sees your password.',
-  basic:
-    'Your username and password are kept only for your active session and are never stored beyond it.',
+  not_logged_in: 'You were logged out before the connection completed.',
 }
 
 function Home() {
   const [searchParams, setSearchParams] = useSearchParams()
-  const [connection, setConnection] = useState<{
-    instanceUrl: string
-    authType?: AuthType
-  } | null>(null)
-  const [isLoadingStatus, setIsLoadingStatus] = useState(true)
-  const [method, setMethod] = useState<AuthType>('oauth')
+  const [profiles, setProfiles] = useState<ServiceNowProfile[] | null>(null)
+  const [loadError, setLoadError] = useState<string | null>(null)
+  const [isAdding, setIsAdding] = useState(false)
 
   // Lazy initializer: read the OAuth redirect's query params exactly once,
   // before they get cleared from the URL below.
@@ -37,16 +31,14 @@ function Home() {
     () => {
       const login = searchParams.get('login')
       if (login === 'success') {
-        return {
-          kind: 'success',
-          text: 'Connected to your ServiceNow instance.',
-        }
+        return { kind: 'success', text: 'ServiceNow instance connected.' }
       }
       if (login === 'error') {
         const reason = searchParams.get('reason') ?? ''
         return {
           kind: 'error',
-          text: ERROR_MESSAGES[reason] ?? 'Login failed. Please try again.',
+          text:
+            ERROR_MESSAGES[reason] ?? 'Connection failed. Please try again.',
         }
       }
       return null
@@ -61,22 +53,29 @@ function Home() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  function refreshProfiles() {
+    return listServiceNowProfiles()
+      .then((res) => {
+        setLoadError(null)
+        setProfiles(res.profiles)
+      })
+      .catch((err) => {
+        setLoadError(
+          err instanceof ApiError
+            ? err.message
+            : 'Could not load your ServiceNow instances. Try again.',
+        )
+      })
+  }
+
   useEffect(() => {
-    getAuthStatus()
-      .then((status) =>
-        setConnection(
-          status.connected && status.instance_url
-            ? { instanceUrl: status.instance_url, authType: status.auth_type }
-            : null,
-        ),
-      )
-      .finally(() => setIsLoadingStatus(false))
+    refreshProfiles()
   }, [])
 
   return (
     <div className="mx-auto flex w-full max-w-md flex-col gap-4">
       <h1 className="text-2xl font-semibold text-foreground">
-        Connect your ServiceNow instance
+        ServiceNow instances
       </h1>
 
       <div className="rounded-2xl border border-border bg-surface p-6 shadow-xl shadow-black/5 sm:p-8">
@@ -93,57 +92,61 @@ function Home() {
           </p>
         )}
 
-        {isLoadingStatus ? (
-          <p className="text-sm text-muted-foreground">Checking connection…</p>
-        ) : connection ? (
-          <ConnectedPanel
-            instanceUrl={connection.instanceUrl}
-            authType={connection.authType}
-            onDisconnected={() => setConnection(null)}
-          />
+        {loadError ? (
+          <div className="flex flex-col items-center gap-3 py-4 text-center">
+            <p className="text-sm text-destructive">{loadError}</p>
+            <button
+              type="button"
+              onClick={() => void refreshProfiles()}
+              className="rounded-md border border-border px-4 py-2 text-sm font-semibold text-foreground transition hover:bg-background"
+            >
+              Retry
+            </button>
+          </div>
+        ) : profiles === null ? (
+          <p className="text-sm text-muted-foreground">Loading…</p>
         ) : (
           <div className="flex flex-col gap-5">
-            <div className="flex rounded-lg border border-border bg-background p-1 text-sm font-medium">
-              <button
-                type="button"
-                onClick={() => setMethod('oauth')}
-                className={`flex-1 rounded-md px-3 py-1.5 transition ${
-                  method === 'oauth'
-                    ? 'bg-primary text-primary-foreground'
-                    : 'text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                OAuth
-              </button>
-              <button
-                type="button"
-                onClick={() => setMethod('basic')}
-                className={`flex-1 rounded-md px-3 py-1.5 transition ${
-                  method === 'basic'
-                    ? 'bg-primary text-primary-foreground'
-                    : 'text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                Basic auth
-              </button>
-            </div>
-
-            {method === 'oauth' ? (
-              <OAuthLoginForm />
-            ) : (
-              <BasicAuthLoginForm
-                onConnected={(instanceUrl) =>
-                  setConnection({ instanceUrl, authType: 'basic' })
-                }
+            {profiles.length > 0 && (
+              <ServiceNowProfileList
+                profiles={profiles}
+                onDeleted={refreshProfiles}
               />
+            )}
+
+            {isAdding ? (
+              <AddServiceNowProfileForm
+                onCreated={() => {
+                  setIsAdding(false)
+                  refreshProfiles()
+                }}
+                onCancel={() => setIsAdding(false)}
+              />
+            ) : profiles.length === 0 ? (
+              <div className="flex flex-col items-center gap-3 py-4 text-center">
+                <p className="text-sm text-muted-foreground">
+                  No ServiceNow instances connected yet.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setIsAdding(true)}
+                  className="rounded-md bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground transition hover:bg-primary-hover"
+                >
+                  Connect an instance
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setIsAdding(true)}
+                className="w-full rounded-md border border-border px-4 py-2.5 text-sm font-semibold text-foreground transition hover:bg-background"
+              >
+                Add another instance
+              </button>
             )}
           </div>
         )}
       </div>
-
-      <p className="text-center text-xs text-muted-foreground">
-        {FOOTER_TEXT[connection?.authType ?? method]}
-      </p>
     </div>
   )
 }
