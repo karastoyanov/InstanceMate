@@ -10,6 +10,8 @@ def create_app(env_name: str | None = None) -> Flask:
     app = Flask(__name__)
     app.config.from_object(get_config(env_name))
 
+    from app import models  # noqa: F401 - registers models with SQLAlchemy's metadata
+
     init_extensions(app)
     register_routes(app)
     register_error_handlers(app)
