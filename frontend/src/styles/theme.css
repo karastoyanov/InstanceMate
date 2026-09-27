@@ -27,6 +27,7 @@
   --color-primary: var(--primary);
   --color-primary-hover: var(--primary-hover);
   --color-primary-foreground: var(--primary-foreground);
+  --color-destructive: var(--destructive);
 }
 
 :root {
@@ -41,6 +42,8 @@
   --primary: var(--color-primary-700);
   --primary-hover: var(--color-primary-800);
   --primary-foreground: #ffffff;
+  /* red-700, 6.5:1 on white/surface */
+  --destructive: #b91c1c;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -56,6 +59,8 @@
     --primary: var(--color-primary-400);
     --primary-hover: var(--color-primary-300);
     --primary-foreground: #0a0f0d;
+    /* red-400, 6.5:1 on dark bg */
+    --destructive: #f87171;
   }
 }
 
@@ -70,6 +75,7 @@
   --primary: var(--color-primary-700);
   --primary-hover: var(--color-primary-800);
   --primary-foreground: #ffffff;
+  --destructive: #b91c1c;
 }
 
 .dark {
@@ -82,4 +88,5 @@
   --primary: var(--color-primary-400);
   --primary-hover: var(--color-primary-300);
   --primary-foreground: #0a0f0d;
+  --destructive: #f87171;
 }
