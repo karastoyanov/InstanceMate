@@ -5,6 +5,7 @@ import AccountLogin from './pages/AccountLogin'
 import AccountRegister from './pages/AccountRegister'
 import Home from './pages/Home'
 import NotFound from './pages/NotFound'
+import Settings from './pages/Settings'
 
 function App() {
   return (
@@ -14,6 +15,7 @@ function App() {
       <Route element={<RequireAccount />}>
         <Route element={<AppLayout />}>
           <Route index element={<Home />} />
+          <Route path="settings" element={<Settings />} />
           <Route path="*" element={<NotFound />} />
         </Route>
       </Route>

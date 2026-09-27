@@ -25,7 +25,7 @@ def _redirect_uri() -> str:
 
 
 def _frontend_redirect(login: str, reason: str | None = None) -> str:
-    url = f"{current_app.config['FRONTEND_URL']}/?login={login}"
+    url = f"{current_app.config['FRONTEND_URL']}/settings?login={login}"
     if reason:
         url += f"&reason={reason}"
     return url
