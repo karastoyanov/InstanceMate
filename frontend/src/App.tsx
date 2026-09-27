@@ -1,14 +1,21 @@
 import { Route, Routes } from 'react-router-dom'
+import RequireAccount from './components/RequireAccount'
 import AppLayout from './layouts/AppLayout'
-import Login from './pages/Login'
+import AccountLogin from './pages/AccountLogin'
+import AccountRegister from './pages/AccountRegister'
+import Home from './pages/Home'
 import NotFound from './pages/NotFound'
 
 function App() {
   return (
     <Routes>
-      <Route index element={<Login />} />
-      <Route element={<AppLayout />}>
-        <Route path="*" element={<NotFound />} />
+      <Route path="/login" element={<AccountLogin />} />
+      <Route path="/register" element={<AccountRegister />} />
+      <Route element={<RequireAccount />}>
+        <Route element={<AppLayout />}>
+          <Route index element={<Home />} />
+          <Route path="*" element={<NotFound />} />
+        </Route>
       </Route>
     </Routes>
   )

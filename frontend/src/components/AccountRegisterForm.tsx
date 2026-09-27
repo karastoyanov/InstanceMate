@@ -1,16 +1,17 @@
 import { useState, type FormEvent } from 'react'
-import { ApiError, startBasicLogin } from '../services/api'
-import { normalizeInstanceUrl } from '../utils/serviceNowInstanceUrl'
+import { ApiError, registerAccount, type Account } from '../services/api'
+import { isValidEmail } from '../utils/validation'
 import { formInputClass } from './formStyles'
 
-interface BasicAuthLoginFormProps {
-  onConnected: (instanceUrl: string) => void
+interface AccountRegisterFormProps {
+  onRegistered: (account: Account) => void
 }
 
-function BasicAuthLoginForm({ onConnected }: BasicAuthLoginFormProps) {
-  const [instanceUrl, setInstanceUrl] = useState('')
+function AccountRegisterForm({ onRegistered }: AccountRegisterFormProps) {
+  const [email, setEmail] = useState('')
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -18,26 +19,33 @@ function BasicAuthLoginForm({ onConnected }: BasicAuthLoginFormProps) {
     event.preventDefault()
     setError(null)
 
-    const trimmedUrl = normalizeInstanceUrl(instanceUrl)
-    if (!trimmedUrl) {
-      setError(
-        'Enter a valid instance URL, e.g. https://your-instance.service-now.com',
-      )
+    if (!isValidEmail(email)) {
+      setError('Enter a valid email address')
       return
     }
-    if (!username.trim() || !password) {
-      setError('Username and password are required')
+    if (!username.trim()) {
+      setError('Username is required')
+      return
+    }
+    if (password.length < 8) {
+      setError('Password must be at least 8 characters')
+      return
+    }
+    if (password !== confirmPassword) {
+      setError('Passwords do not match')
       return
     }
 
     setIsSubmitting(true)
     try {
-      const result = await startBasicLogin({
-        instanceUrl: trimmedUrl,
-        username: username.trim(),
+      const { user } = await registerAccount(
+        email.trim(),
+        username.trim(),
         password,
-      })
-      onConnected(result.instance_url ?? trimmedUrl)
+      )
+      if (user) {
+        onRegistered(user)
+      }
     } catch (err) {
       setError(
         err instanceof ApiError
@@ -51,26 +59,16 @@ function BasicAuthLoginForm({ onConnected }: BasicAuthLoginFormProps) {
 
   return (
     <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-4">
-      <p className="rounded-md border border-border bg-background px-3 py-2 text-xs text-muted-foreground">
-        OAuth is the preferred, more secure way to connect. Only use basic auth
-        if your instance doesn't have an OAuth application registered.
-      </p>
-
       <div className="flex flex-col gap-1.5">
-        <label
-          htmlFor="basicInstanceUrl"
-          className="text-sm font-medium text-foreground"
-        >
-          Instance URL
+        <label htmlFor="email" className="text-sm font-medium text-foreground">
+          Email
         </label>
         <input
-          id="basicInstanceUrl"
-          type="text"
-          inputMode="url"
-          autoComplete="off"
-          placeholder="https://your-instance.service-now.com"
-          value={instanceUrl}
-          onChange={(event) => setInstanceUrl(event.target.value)}
+          id="email"
+          type="email"
+          autoComplete="email"
+          value={email}
+          onChange={(event) => setEmail(event.target.value)}
           className={formInputClass}
         />
       </div>
@@ -102,9 +100,26 @@ function BasicAuthLoginForm({ onConnected }: BasicAuthLoginFormProps) {
         <input
           id="password"
           type="password"
-          autoComplete="current-password"
+          autoComplete="new-password"
           value={password}
           onChange={(event) => setPassword(event.target.value)}
+          className={formInputClass}
+        />
+      </div>
+
+      <div className="flex flex-col gap-1.5">
+        <label
+          htmlFor="confirmPassword"
+          className="text-sm font-medium text-foreground"
+        >
+          Confirm password
+        </label>
+        <input
+          id="confirmPassword"
+          type="password"
+          autoComplete="new-password"
+          value={confirmPassword}
+          onChange={(event) => setConfirmPassword(event.target.value)}
           className={formInputClass}
         />
       </div>
@@ -118,12 +133,12 @@ function BasicAuthLoginForm({ onConnected }: BasicAuthLoginFormProps) {
       <button
         type="submit"
         disabled={isSubmitting}
-        className="mt-2 w-full rounded-md border border-border px-4 py-2.5 text-sm font-semibold text-foreground transition hover:bg-surface disabled:cursor-not-allowed disabled:opacity-60"
+        className="mt-2 w-full rounded-md bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground transition hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
       >
-        {isSubmitting ? 'Signing in…' : 'Sign in with username & password'}
+        {isSubmitting ? 'Creating account…' : 'Create account'}
       </button>
     </form>
   )
 }
 
-export default BasicAuthLoginForm
+export default AccountRegisterForm

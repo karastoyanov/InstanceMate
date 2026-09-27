@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { ApiError, startServiceNowLogin } from '../services/api'
 import { normalizeInstanceUrl } from '../utils/serviceNowInstanceUrl'
-import { authInputClass } from './authFormStyles'
+import { formInputClass } from './formStyles'
 
 function OAuthLoginForm() {
   const [instanceUrl, setInstanceUrl] = useState('')
@@ -62,7 +62,7 @@ function OAuthLoginForm() {
           placeholder="https://your-instance.service-now.com"
           value={instanceUrl}
           onChange={(event) => setInstanceUrl(event.target.value)}
-          className={authInputClass}
+          className={formInputClass}
         />
       </div>
 
@@ -79,7 +79,7 @@ function OAuthLoginForm() {
           autoComplete="off"
           value={clientId}
           onChange={(event) => setClientId(event.target.value)}
-          className={authInputClass}
+          className={formInputClass}
         />
       </div>
 
@@ -96,7 +96,7 @@ function OAuthLoginForm() {
           autoComplete="off"
           value={clientSecret}
           onChange={(event) => setClientSecret(event.target.value)}
-          className={authInputClass}
+          className={formInputClass}
         />
       </div>
 
