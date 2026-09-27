@@ -139,9 +139,13 @@ def get_connection() -> dict | None:
 
 
 def clear_connection() -> None:
-    """Log out: drop the entire session, not just the connection, so no
-    stray pending-authorization state survives either."""
-    session.clear()
+    """Log out of ServiceNow: drop both the active connection and any
+    stray pending-authorization state. Scoped to this module's own keys -
+    other independent session data (e.g. the LLM provider config) is left
+    alone, since disconnecting ServiceNow shouldn't reset unrelated
+    settings."""
+    session.pop(_CONNECTION_KEY, None)
+    session.pop(_PENDING_KEY, None)
 
 
 def get_valid_access_token() -> str | None:
