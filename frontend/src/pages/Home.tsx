@@ -2,7 +2,11 @@ import { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import AddServiceNowProfileForm from '../components/AddServiceNowProfileForm'
 import ServiceNowProfileList from '../components/ServiceNowProfileList'
-import { listServiceNowProfiles, type ServiceNowProfile } from '../services/api'
+import {
+  ApiError,
+  listServiceNowProfiles,
+  type ServiceNowProfile,
+} from '../services/api'
 
 const ERROR_MESSAGES: Record<string, string> = {
   sn_denied: 'ServiceNow declined the authorization request.',
@@ -18,6 +22,7 @@ const ERROR_MESSAGES: Record<string, string> = {
 function Home() {
   const [searchParams, setSearchParams] = useSearchParams()
   const [profiles, setProfiles] = useState<ServiceNowProfile[] | null>(null)
+  const [loadError, setLoadError] = useState<string | null>(null)
   const [isAdding, setIsAdding] = useState(false)
 
   // Lazy initializer: read the OAuth redirect's query params exactly once,
@@ -49,7 +54,18 @@ function Home() {
   }, [])
 
   function refreshProfiles() {
-    return listServiceNowProfiles().then((res) => setProfiles(res.profiles))
+    return listServiceNowProfiles()
+      .then((res) => {
+        setLoadError(null)
+        setProfiles(res.profiles)
+      })
+      .catch((err) => {
+        setLoadError(
+          err instanceof ApiError
+            ? err.message
+            : 'Could not load your ServiceNow instances. Try again.',
+        )
+      })
   }
 
   useEffect(() => {
@@ -76,7 +92,18 @@ function Home() {
           </p>
         )}
 
-        {profiles === null ? (
+        {loadError ? (
+          <div className="flex flex-col items-center gap-3 py-4 text-center">
+            <p className="text-sm text-destructive">{loadError}</p>
+            <button
+              type="button"
+              onClick={() => void refreshProfiles()}
+              className="rounded-md border border-border px-4 py-2 text-sm font-semibold text-foreground transition hover:bg-background"
+            >
+              Retry
+            </button>
+          </div>
+        ) : profiles === null ? (
           <p className="text-sm text-muted-foreground">Loading…</p>
         ) : (
           <div className="flex flex-col gap-5">
