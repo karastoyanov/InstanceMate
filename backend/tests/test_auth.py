@@ -126,6 +126,7 @@ def test_status_refreshes_expired_token(app, client):
             "access_token": "expired-token",
             "refresh_token": "rt-1",
             "expires_at": time.time() - 10,
+            "established_at": time.time(),
         }
         encrypted = encrypt_json(connection, secret)
 
