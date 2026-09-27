@@ -23,6 +23,9 @@ function Header() {
             <NavLink to="/" end className={navLinkClass}>
               Home
             </NavLink>
+            <NavLink to="/settings" className={navLinkClass}>
+              Settings
+            </NavLink>
           </nav>
           <button
             type="button"

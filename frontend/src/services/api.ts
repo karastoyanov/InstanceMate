@@ -80,6 +80,41 @@ export function createServiceNowBasicProfile(
   })
 }
 
+export type LlmProviderName = 'openai' | 'anthropic' | 'google'
+
+export interface LlmProfile {
+  id: number
+  label: string
+  provider: LlmProviderName
+}
+
+export function listLlmProfiles() {
+  return request<{ profiles: LlmProfile[] }>('/profiles/llm')
+}
+
+export function deleteLlmProfile(profileId: number) {
+  return request<{ ok: true }>(`/profiles/llm/${profileId}`, {
+    method: 'DELETE',
+  })
+}
+
+export interface CreateLlmProfilePayload {
+  label: string
+  provider: LlmProviderName
+  apiKey: string
+}
+
+export function createLlmProfile(payload: CreateLlmProfilePayload) {
+  return request<{ profile: LlmProfile }>('/profiles/llm', {
+    method: 'POST',
+    body: JSON.stringify({
+      label: payload.label,
+      provider: payload.provider,
+      api_key: payload.apiKey,
+    }),
+  })
+}
+
 export interface Account {
   id: number
   email: string
