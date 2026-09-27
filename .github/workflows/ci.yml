@@ -51,9 +51,19 @@ jobs:
       - name: Run tests
         if: steps.pycheck.outputs.found == 'true'
         run: |
-          if find . -path '*/tests/*' -name 'test_*.py' -not -path './.git/*' | grep -q .; then
-            pytest
-          else
+          # Run each Python service's tests separately (not one pytest from
+          # the repo root): backend/ and mcp-server/ both have a top-level
+          # `app` package and a `tests` package, which collide if pytest
+          # tries to import both into the same process.
+          ran_any=false
+          for dir in backend mcp-server; do
+            if find "$dir" -path '*/tests/*' -name 'test_*.py' 2>/dev/null | grep -q .; then
+              echo "Running tests in $dir"
+              (cd "$dir" && pytest)
+              ran_any=true
+            fi
+          done
+          if [ "$ran_any" = false ]; then
             echo "No tests found yet, skipping."
           fi
 
