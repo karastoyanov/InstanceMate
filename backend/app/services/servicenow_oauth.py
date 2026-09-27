@@ -1,32 +1,12 @@
-import re
 from urllib.parse import urlencode
 
 import requests
-
-_INSTANCE_URL_RE = re.compile(
-    r"^https://[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.service-now\.com$"
-)
 
 REQUEST_TIMEOUT_SECONDS = 10
 
 
 class OAuthError(Exception):
     """Raised when ServiceNow rejects an authorization/token request."""
-
-
-def normalize_instance_url(raw_url: str) -> str:
-    """Validate and normalize a user-supplied ServiceNow instance URL.
-
-    Restricted to https://<instance>.service-now.com to prevent SSRF via an
-    attacker-controlled host being used as the target of server-side token
-    exchange/refresh requests.
-    """
-    url = raw_url.strip().rstrip("/")
-    if not _INSTANCE_URL_RE.match(url):
-        raise ValueError(
-            "Instance URL must look like https://your-instance.service-now.com"
-        )
-    return url
 
 
 def build_authorization_url(
