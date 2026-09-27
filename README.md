@@ -43,6 +43,14 @@ docs/         Additional documentation
 
 Prerequisites: Python 3.12+ and Node.js 20+ (with npm).
 
+One env file for the whole project, in the repo root:
+
+```bash
+cp .env.example .env   # fill in values you need locally
+```
+
+Backend, frontend, and mcp-server all read this same root `.env` (Flask/python-dotenv and the MCP server search upward for it automatically; the frontend is pointed at it via `envDir` in `vite.config.ts`) - no per-service copies needed.
+
 ### Backend (Flask)
 
 ```bash
@@ -50,17 +58,16 @@ cd backend
 python3 -m venv venv               # create an isolated Python environment
 source venv/bin/activate           # activate it (Windows: venv\Scripts\activate)
 pip install -r requirements.txt    # install Flask + dev/test tooling
-cp ../.env.example .env            # copy env template, fill in values you need locally
 flask db upgrade                   # create/update DB tables (SQLite file by default)
 flask run                          # start the dev server at http://127.0.0.1:5000
 ```
 
 Check it's up with `curl http://127.0.0.1:5000/health`. `flask db upgrade` is needed before using account/login features (it creates the tables), but the server itself boots fine without it. Other useful commands from `backend/`: `pytest` (run tests) and `ruff check .` (lint).
 
-For real Postgres locally, uncomment `DATABASE_URL` in `.env` (built from the `POSTGRES_*` values above it) and, from `backend/`:
+For real Postgres locally, uncomment `DATABASE_URL` in `.env` (built from the `POSTGRES_*` values above it) and, from the repo root:
 
 ```bash
-docker compose --env-file .env -f ../infra/docker-compose.yml up -d
+docker compose --env-file .env -f infra/docker-compose.yml up -d
 ```
 
 The `--env-file .env` is required — Compose otherwise looks for a `.env` next to the compose file, not at the path you point `-f` from, and would silently start Postgres with the file's hardcoded fallback values instead of yours.

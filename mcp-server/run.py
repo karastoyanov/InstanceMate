@@ -1,3 +1,7 @@
+from dotenv import load_dotenv
+
+load_dotenv()  # picks up the repo root's .env (searches upward from cwd)
+
 from app import create_server
 from app.config import Config
 
