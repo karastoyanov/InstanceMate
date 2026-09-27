@@ -35,9 +35,29 @@ export function startServiceNowLogin(payload: ServiceNowLoginPayload) {
   })
 }
 
+export interface BasicLoginPayload {
+  instanceUrl: string
+  username: string
+  password: string
+}
+
+export function startBasicLogin(payload: BasicLoginPayload) {
+  return request<AuthStatus>('/auth/servicenow/basic-login', {
+    method: 'POST',
+    body: JSON.stringify({
+      instance_url: payload.instanceUrl,
+      username: payload.username,
+      password: payload.password,
+    }),
+  })
+}
+
+export type AuthType = 'oauth' | 'basic'
+
 export interface AuthStatus {
   connected: boolean
   instance_url?: string
+  auth_type?: AuthType
 }
 
 export function getAuthStatus() {

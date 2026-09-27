@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
+import BasicAuthLoginForm from '../components/BasicAuthLoginForm'
 import ConnectedPanel from '../components/ConnectedPanel'
-import ServiceNowLoginForm from '../components/ServiceNowLoginForm'
-import { getAuthStatus } from '../services/api'
+import OAuthLoginForm from '../components/OAuthLoginForm'
+import { getAuthStatus, type AuthType } from '../services/api'
 
 const ERROR_MESSAGES: Record<string, string> = {
   sn_denied: 'ServiceNow declined the authorization request.',
@@ -14,10 +15,21 @@ const ERROR_MESSAGES: Record<string, string> = {
     'ServiceNow rejected the token exchange. Check your Client ID/Secret.',
 }
 
+const FOOTER_TEXT: Record<AuthType, string> = {
+  oauth:
+    'Your credentials are exchanged directly with your ServiceNow instance via OAuth — InstanceMate never sees your password.',
+  basic:
+    'Your username and password are kept only for your active session and are never stored beyond it.',
+}
+
 function Login() {
   const [searchParams, setSearchParams] = useSearchParams()
-  const [instanceUrl, setInstanceUrl] = useState<string | null>(null)
+  const [connection, setConnection] = useState<{
+    instanceUrl: string
+    authType?: AuthType
+  } | null>(null)
   const [isLoadingStatus, setIsLoadingStatus] = useState(true)
+  const [method, setMethod] = useState<AuthType>('oauth')
 
   // Lazy initializer: read the OAuth redirect's query params exactly once,
   // before they get cleared from the URL below.
@@ -52,7 +64,11 @@ function Login() {
   useEffect(() => {
     getAuthStatus()
       .then((status) =>
-        setInstanceUrl(status.connected ? (status.instance_url ?? null) : null),
+        setConnection(
+          status.connected && status.instance_url
+            ? { instanceUrl: status.instance_url, authType: status.auth_type }
+            : null,
+        ),
       )
       .finally(() => setIsLoadingStatus(false))
   }, [])
@@ -99,19 +115,54 @@ function Login() {
             <p className="text-sm text-muted-foreground">
               Checking connection…
             </p>
-          ) : instanceUrl ? (
+          ) : connection ? (
             <ConnectedPanel
-              instanceUrl={instanceUrl}
-              onDisconnected={() => setInstanceUrl(null)}
+              instanceUrl={connection.instanceUrl}
+              authType={connection.authType}
+              onDisconnected={() => setConnection(null)}
             />
           ) : (
-            <ServiceNowLoginForm />
+            <div className="flex flex-col gap-5">
+              <div className="flex rounded-lg border border-border bg-background p-1 text-sm font-medium">
+                <button
+                  type="button"
+                  onClick={() => setMethod('oauth')}
+                  className={`flex-1 rounded-md px-3 py-1.5 transition ${
+                    method === 'oauth'
+                      ? 'bg-primary text-primary-foreground'
+                      : 'text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  OAuth
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setMethod('basic')}
+                  className={`flex-1 rounded-md px-3 py-1.5 transition ${
+                    method === 'basic'
+                      ? 'bg-primary text-primary-foreground'
+                      : 'text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  Basic auth
+                </button>
+              </div>
+
+              {method === 'oauth' ? (
+                <OAuthLoginForm />
+              ) : (
+                <BasicAuthLoginForm
+                  onConnected={(instanceUrl) =>
+                    setConnection({ instanceUrl, authType: 'basic' })
+                  }
+                />
+              )}
+            </div>
           )}
         </div>
 
         <p className="mt-6 text-center text-xs text-muted-foreground">
-          Your credentials are exchanged directly with your ServiceNow instance
-          via OAuth — InstanceMate never sees your password.
+          {FOOTER_TEXT[connection?.authType ?? method]}
         </p>
       </div>
     </div>
