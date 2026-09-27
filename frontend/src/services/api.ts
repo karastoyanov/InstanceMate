@@ -18,54 +18,66 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   return response.json() as Promise<T>
 }
 
-export interface ServiceNowLoginPayload {
+export type AuthType = 'oauth' | 'basic'
+
+export interface ServiceNowProfile {
+  id: number
+  label: string
+  instance_url: string
+  auth_type: AuthType
+}
+
+export function listServiceNowProfiles() {
+  return request<{ profiles: ServiceNowProfile[] }>('/profiles/servicenow')
+}
+
+export function deleteServiceNowProfile(profileId: number) {
+  return request<{ ok: true }>(`/profiles/servicenow/${profileId}`, {
+    method: 'DELETE',
+  })
+}
+
+export interface StartOAuthProfilePayload {
+  label: string
   instanceUrl: string
   clientId: string
   clientSecret: string
 }
 
-export function startServiceNowLogin(payload: ServiceNowLoginPayload) {
-  return request<{ authorization_url: string }>('/auth/servicenow/login', {
-    method: 'POST',
-    body: JSON.stringify({
-      instance_url: payload.instanceUrl,
-      client_id: payload.clientId,
-      client_secret: payload.clientSecret,
-    }),
-  })
+export function startServiceNowOAuthProfile(payload: StartOAuthProfilePayload) {
+  return request<{ authorization_url: string }>(
+    '/profiles/servicenow/oauth/start',
+    {
+      method: 'POST',
+      body: JSON.stringify({
+        label: payload.label,
+        instance_url: payload.instanceUrl,
+        client_id: payload.clientId,
+        client_secret: payload.clientSecret,
+      }),
+    },
+  )
 }
 
-export interface BasicLoginPayload {
+export interface CreateBasicProfilePayload {
+  label: string
   instanceUrl: string
   username: string
   password: string
 }
 
-export function startBasicLogin(payload: BasicLoginPayload) {
-  return request<AuthStatus>('/auth/servicenow/basic-login', {
+export function createServiceNowBasicProfile(
+  payload: CreateBasicProfilePayload,
+) {
+  return request<{ profile: ServiceNowProfile }>('/profiles/servicenow/basic', {
     method: 'POST',
     body: JSON.stringify({
+      label: payload.label,
       instance_url: payload.instanceUrl,
       username: payload.username,
       password: payload.password,
     }),
   })
-}
-
-export type AuthType = 'oauth' | 'basic'
-
-export interface AuthStatus {
-  connected: boolean
-  instance_url?: string
-  auth_type?: AuthType
-}
-
-export function getAuthStatus() {
-  return request<AuthStatus>('/auth/servicenow/status')
-}
-
-export function logout() {
-  return request<AuthStatus>('/auth/servicenow/logout', { method: 'POST' })
 }
 
 export interface Account {
