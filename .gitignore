@@ -1,3 +1,7 @@
+# Local SQLite databases (default DATABASE_URL fallback for zero-setup dev)
+*.db
+*.sqlite3
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]
@@ -254,6 +258,7 @@ pgdata/
 # Local model / embedding caches
 .cache/
 models/
+!backend/app/models/
 *.gguf
 *.safetensors
 sentence-transformers/

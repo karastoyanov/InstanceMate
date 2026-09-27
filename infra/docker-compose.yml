@@ -1,0 +1,15 @@
+services:
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
+      POSTGRES_DB: ${POSTGRES_DB:-instancemate}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - instancemate-db:/var/lib/postgresql/data
+
+volumes:
+  instancemate-db:

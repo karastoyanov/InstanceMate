@@ -1,0 +1,3 @@
+# Alembic-generated migration scripts aren't hand-maintained code - don't
+# lint them (this also covers every future auto-generated migration file).
+extend-exclude = ["backend/migrations"]

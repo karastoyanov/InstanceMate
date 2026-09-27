@@ -1,11 +1,16 @@
 import os
 from datetime import timedelta
+from typing import ClassVar
 
 
 class Config:
     SESSION_SECRET = os.environ.get("SESSION_SECRET", "changeme")
     SECRET_KEY = SESSION_SECRET
-    DATABASE_URL = os.environ.get("DATABASE_URL")
+    # Falls back to a local SQLite file so the app boots with zero setup;
+    # set DATABASE_URL (see .env.example) to point at real Postgres.
+    DATABASE_URL = os.environ.get("DATABASE_URL", "sqlite:///dev.db")
+    SQLALCHEMY_DATABASE_URI = DATABASE_URL
+    SQLALCHEMY_ENGINE_OPTIONS: ClassVar[dict] = {"pool_pre_ping": True}
     MCP_SERVER_URL = os.environ.get("MCP_SERVER_URL")
 
     # Backend's own externally-reachable base URL, used to build the fixed
@@ -39,6 +44,8 @@ class DevelopmentConfig(Config):
 
 class TestingConfig(Config):
     TESTING = True
+    # In-memory SQLite so tests don't need a real Postgres instance running.
+    SQLALCHEMY_DATABASE_URI = "sqlite:///:memory:"
 
 
 class ProductionConfig(Config):
