@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import BasicAuthLoginForm from '../components/BasicAuthLoginForm'
 import ConnectedPanel from '../components/ConnectedPanel'
+import LlmProviderPanel from '../components/LlmProviderPanel'
 import OAuthLoginForm from '../components/OAuthLoginForm'
 import { getAuthStatus, type AuthType } from '../services/api'
 
@@ -160,6 +161,12 @@ function Login() {
             </div>
           )}
         </div>
+
+        {connection && (
+          <div className="mt-4 rounded-2xl border border-border bg-surface p-6 shadow-xl shadow-black/5 sm:p-8">
+            <LlmProviderPanel />
+          </div>
+        )}
 
         <p className="mt-6 text-center text-xs text-muted-foreground">
           {FOOTER_TEXT[connection?.authType ?? method]}

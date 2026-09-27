@@ -67,3 +67,24 @@ export function getAuthStatus() {
 export function logout() {
   return request<AuthStatus>('/auth/servicenow/logout', { method: 'POST' })
 }
+
+export type LlmProvider = 'openai' | 'anthropic' | 'google'
+
+export interface LlmProviderStatus {
+  provider: LlmProvider | null
+}
+
+export function getLlmProviderStatus() {
+  return request<LlmProviderStatus>('/llm/provider')
+}
+
+export function setLlmProvider(provider: LlmProvider, apiKey: string) {
+  return request<LlmProviderStatus>('/llm/provider', {
+    method: 'POST',
+    body: JSON.stringify({ provider, api_key: apiKey }),
+  })
+}
+
+export function clearLlmProvider() {
+  return request<LlmProviderStatus>('/llm/provider/clear', { method: 'POST' })
+}

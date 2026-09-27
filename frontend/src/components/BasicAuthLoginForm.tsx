@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { ApiError, startBasicLogin } from '../services/api'
 import { normalizeInstanceUrl } from '../utils/serviceNowInstanceUrl'
-import { authInputClass } from './authFormStyles'
+import { formInputClass } from './formStyles'
 
 interface BasicAuthLoginFormProps {
   onConnected: (instanceUrl: string) => void
@@ -71,7 +71,7 @@ function BasicAuthLoginForm({ onConnected }: BasicAuthLoginFormProps) {
           placeholder="https://your-instance.service-now.com"
           value={instanceUrl}
           onChange={(event) => setInstanceUrl(event.target.value)}
-          className={authInputClass}
+          className={formInputClass}
         />
       </div>
 
@@ -88,7 +88,7 @@ function BasicAuthLoginForm({ onConnected }: BasicAuthLoginFormProps) {
           autoComplete="username"
           value={username}
           onChange={(event) => setUsername(event.target.value)}
-          className={authInputClass}
+          className={formInputClass}
         />
       </div>
 
@@ -105,7 +105,7 @@ function BasicAuthLoginForm({ onConnected }: BasicAuthLoginFormProps) {
           autoComplete="current-password"
           value={password}
           onChange={(event) => setPassword(event.target.value)}
-          className={authInputClass}
+          className={formInputClass}
         />
       </div>
 
