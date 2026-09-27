@@ -67,3 +67,39 @@ export function getAuthStatus() {
 export function logout() {
   return request<AuthStatus>('/auth/servicenow/logout', { method: 'POST' })
 }
+
+export interface Account {
+  id: number
+  email: string
+  username: string
+}
+
+export interface AccountStatus {
+  user: Account | null
+}
+
+export function registerAccount(
+  email: string,
+  username: string,
+  password: string,
+) {
+  return request<AccountStatus>('/account/register', {
+    method: 'POST',
+    body: JSON.stringify({ email, username, password }),
+  })
+}
+
+export function loginAccount(email: string, password: string) {
+  return request<AccountStatus>('/account/login', {
+    method: 'POST',
+    body: JSON.stringify({ email, password }),
+  })
+}
+
+export function logoutAccount() {
+  return request<AccountStatus>('/account/logout', { method: 'POST' })
+}
+
+export function getAccountStatus() {
+  return request<AccountStatus>('/account/me')
+}
