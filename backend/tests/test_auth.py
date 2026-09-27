@@ -10,6 +10,12 @@ VALID_PAYLOAD = {
     "client_secret": "super-secret",
 }
 
+VALID_BASIC_PAYLOAD = {
+    "instance_url": "https://dev12345.service-now.com",
+    "username": "admin",
+    "password": "super-secret",
+}
+
 
 def test_login_rejects_missing_fields(client):
     response = client.post("/auth/servicenow/login", json={})
@@ -83,6 +89,7 @@ def test_full_login_flow_then_status_and_logout(client):
     assert status_response.get_json() == {
         "connected": True,
         "instance_url": VALID_PAYLOAD["instance_url"],
+        "auth_type": "oauth",
     }
 
     logout_response = client.post("/auth/servicenow/logout")
@@ -112,6 +119,7 @@ def test_status_refreshes_expired_token(app, client):
     with app.app_context():
         secret = app.config["SESSION_SECRET"]
         connection = {
+            "auth_type": "oauth",
             "instance_url": VALID_PAYLOAD["instance_url"],
             "client_id": VALID_PAYLOAD["client_id"],
             "client_secret": VALID_PAYLOAD["client_secret"],
@@ -141,4 +149,54 @@ def test_status_refreshes_expired_token(app, client):
     assert response.get_json() == {
         "connected": True,
         "instance_url": VALID_PAYLOAD["instance_url"],
+        "auth_type": "oauth",
     }
+
+
+def test_basic_login_rejects_missing_fields(client):
+    response = client.post("/auth/servicenow/basic-login", json={})
+    assert response.status_code == 400
+
+
+def test_basic_login_rejects_invalid_instance_url(client):
+    response = client.post(
+        "/auth/servicenow/basic-login",
+        json={**VALID_BASIC_PAYLOAD, "instance_url": "https://evil.example.com"},
+    )
+    assert response.status_code == 400
+
+
+def test_basic_login_rejects_invalid_credentials(client):
+    with patch(
+        "app.services.servicenow_basic_auth.requests.get",
+        return_value=Mock(status_code=401),
+    ):
+        response = client.post("/auth/servicenow/basic-login", json=VALID_BASIC_PAYLOAD)
+
+    assert response.status_code == 401
+    assert "Invalid" in response.get_json()["error"]
+
+
+def test_basic_login_success_then_status_and_logout(client):
+    with patch(
+        "app.services.servicenow_basic_auth.requests.get",
+        return_value=Mock(status_code=200),
+    ):
+        response = client.post("/auth/servicenow/basic-login", json=VALID_BASIC_PAYLOAD)
+
+    assert response.status_code == 200
+    assert response.get_json() == {
+        "connected": True,
+        "instance_url": VALID_BASIC_PAYLOAD["instance_url"],
+        "auth_type": "basic",
+    }
+
+    status_response = client.get("/auth/servicenow/status")
+    assert status_response.get_json() == {
+        "connected": True,
+        "instance_url": VALID_BASIC_PAYLOAD["instance_url"],
+        "auth_type": "basic",
+    }
+
+    logout_response = client.post("/auth/servicenow/logout")
+    assert logout_response.get_json() == {"connected": False}

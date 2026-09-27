@@ -42,17 +42,30 @@ def pop_pending_authorization(state: str) -> dict | None:
     return data
 
 
-def store_connection(
+def store_oauth_connection(
     instance_url: str, client_id: str, client_secret: str, token_response: dict
 ) -> None:
     session[_CONNECTION_KEY] = encrypt_json(
         {
+            "auth_type": "oauth",
             "instance_url": instance_url,
             "client_id": client_id,
             "client_secret": client_secret,
             "access_token": token_response["access_token"],
             "refresh_token": token_response.get("refresh_token"),
             "expires_at": time.time() + float(token_response.get("expires_in", 0)),
+        },
+        _secret(),
+    )
+
+
+def store_basic_connection(instance_url: str, username: str, password: str) -> None:
+    session[_CONNECTION_KEY] = encrypt_json(
+        {
+            "auth_type": "basic",
+            "instance_url": instance_url,
+            "username": username,
+            "password": password,
         },
         _secret(),
     )
@@ -70,10 +83,14 @@ def clear_connection() -> None:
 
 
 def get_valid_access_token() -> str | None:
-    """Return a live access token for the current session, refreshing it
-    against ServiceNow first if it's expired or about to expire."""
+    """Return a live OAuth access token for the current session, refreshing
+    it against ServiceNow first if it's expired or about to expire.
+
+    Only meaningful for auth_type "oauth" connections; returns None for a
+    basic-auth connection (or no connection at all).
+    """
     connection = get_connection()
-    if connection is None:
+    if connection is None or connection.get("auth_type") != "oauth":
         return None
 
     if connection["expires_at"] - time.time() > _EXPIRY_LEEWAY_SECONDS:
@@ -94,7 +111,7 @@ def get_valid_access_token() -> str | None:
         clear_connection()
         return None
 
-    store_connection(
+    store_oauth_connection(
         connection["instance_url"],
         connection["client_id"],
         connection["client_secret"],

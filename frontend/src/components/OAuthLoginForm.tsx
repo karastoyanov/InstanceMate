@@ -1,13 +1,9 @@
 import { useState, type FormEvent } from 'react'
 import { ApiError, startServiceNowLogin } from '../services/api'
+import { normalizeInstanceUrl } from '../utils/serviceNowInstanceUrl'
+import { authInputClass } from './authFormStyles'
 
-const INSTANCE_URL_PATTERN =
-  /^https:\/\/[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.service-now\.com$/i
-
-const inputClass =
-  'w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/40'
-
-function ServiceNowLoginForm() {
+function OAuthLoginForm() {
   const [instanceUrl, setInstanceUrl] = useState('')
   const [clientId, setClientId] = useState('')
   const [clientSecret, setClientSecret] = useState('')
@@ -18,8 +14,8 @@ function ServiceNowLoginForm() {
     event.preventDefault()
     setError(null)
 
-    const trimmedUrl = instanceUrl.trim().replace(/\/+$/, '')
-    if (!INSTANCE_URL_PATTERN.test(trimmedUrl)) {
+    const trimmedUrl = normalizeInstanceUrl(instanceUrl)
+    if (!trimmedUrl) {
       setError(
         'Enter a valid instance URL, e.g. https://your-instance.service-now.com',
       )
@@ -66,7 +62,7 @@ function ServiceNowLoginForm() {
           placeholder="https://your-instance.service-now.com"
           value={instanceUrl}
           onChange={(event) => setInstanceUrl(event.target.value)}
-          className={inputClass}
+          className={authInputClass}
         />
       </div>
 
@@ -83,7 +79,7 @@ function ServiceNowLoginForm() {
           autoComplete="off"
           value={clientId}
           onChange={(event) => setClientId(event.target.value)}
-          className={inputClass}
+          className={authInputClass}
         />
       </div>
 
@@ -100,7 +96,7 @@ function ServiceNowLoginForm() {
           autoComplete="off"
           value={clientSecret}
           onChange={(event) => setClientSecret(event.target.value)}
-          className={inputClass}
+          className={authInputClass}
         />
       </div>
 
@@ -121,4 +117,4 @@ function ServiceNowLoginForm() {
   )
 }
 
-export default ServiceNowLoginForm
+export default OAuthLoginForm

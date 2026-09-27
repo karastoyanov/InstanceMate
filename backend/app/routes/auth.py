@@ -2,7 +2,12 @@ import secrets
 
 from flask import Blueprint, current_app, jsonify, redirect, request
 
-from app.services import servicenow_oauth, session_store
+from app.services import (
+    instance_url,
+    servicenow_basic_auth,
+    servicenow_oauth,
+    session_store,
+)
 
 auth_bp = Blueprint("auth", __name__, url_prefix="/auth/servicenow")
 
@@ -31,18 +36,18 @@ def login():
         ), 400
 
     try:
-        instance_url = servicenow_oauth.normalize_instance_url(raw_instance_url)
+        normalized_url = instance_url.normalize_instance_url(raw_instance_url)
     except ValueError as exc:
         return jsonify(error=str(exc)), 400
 
     state = secrets.token_urlsafe(32)
     redirect_uri = _redirect_uri()
     session_store.store_pending_authorization(
-        state, instance_url, client_id, client_secret, redirect_uri
+        state, normalized_url, client_id, client_secret, redirect_uri
     )
 
     authorization_url = servicenow_oauth.build_authorization_url(
-        instance_url, client_id, redirect_uri, state
+        normalized_url, client_id, redirect_uri, state
     )
     return jsonify(authorization_url=authorization_url)
 
@@ -72,7 +77,7 @@ def callback():
     except servicenow_oauth.OAuthError:
         return redirect(_frontend_redirect("error", "token_exchange_failed"))
 
-    session_store.store_connection(
+    session_store.store_oauth_connection(
         pending["instance_url"],
         pending["client_id"],
         pending["client_secret"],
@@ -81,14 +86,47 @@ def callback():
     return redirect(_frontend_redirect("success"))
 
 
+@auth_bp.post("/basic-login")
+def basic_login():
+    body = request.get_json(silent=True) or {}
+    username = (body.get("username") or "").strip()
+    password = body.get("password") or ""
+    raw_instance_url = (body.get("instance_url") or "").strip()
+
+    if not username or not password or not raw_instance_url:
+        return jsonify(error="instance_url, username, and password are required"), 400
+
+    try:
+        normalized_url = instance_url.normalize_instance_url(raw_instance_url)
+    except ValueError as exc:
+        return jsonify(error=str(exc)), 400
+
+    try:
+        servicenow_basic_auth.verify_credentials(normalized_url, username, password)
+    except servicenow_basic_auth.BasicAuthError as exc:
+        return jsonify(error=str(exc)), 401
+
+    session_store.store_basic_connection(normalized_url, username, password)
+    return jsonify(connected=True, instance_url=normalized_url, auth_type="basic")
+
+
 @auth_bp.get("/status")
 def status():
-    access_token = session_store.get_valid_access_token()
-    if access_token is None:
+    connection = session_store.get_connection()
+    if connection is None:
         return jsonify(connected=False)
 
-    connection = session_store.get_connection()
-    return jsonify(connected=True, instance_url=connection["instance_url"])
+    if (
+        connection["auth_type"] == "oauth"
+        and session_store.get_valid_access_token() is None
+    ):
+        return jsonify(connected=False)
+
+    return jsonify(
+        connected=True,
+        instance_url=connection["instance_url"],
+        auth_type=connection["auth_type"],
+    )
 
 
 @auth_bp.post("/logout")
