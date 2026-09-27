@@ -1,4 +1,5 @@
 import os
+from datetime import timedelta
 
 
 class Config:
@@ -18,6 +19,18 @@ class Config:
     SESSION_COOKIE_HTTPONLY = True
     SESSION_COOKIE_SAMESITE = "Lax"
     SESSION_COOKIE_SECURE = False
+
+    # Absolute lifetime of an established ServiceNow connection, regardless
+    # of how long-lived the underlying OAuth token/refresh token is.
+    SESSION_LIFETIME_SECONDS = int(
+        os.environ.get("SESSION_LIFETIME_SECONDS", str(12 * 60 * 60))
+    )
+    # How long an in-progress OAuth authorization attempt (after /login,
+    # before /callback) stays valid.
+    PENDING_AUTHORIZATION_LIFETIME_SECONDS = int(
+        os.environ.get("PENDING_AUTHORIZATION_LIFETIME_SECONDS", str(10 * 60))
+    )
+    PERMANENT_SESSION_LIFETIME = timedelta(seconds=SESSION_LIFETIME_SECONDS)
 
 
 class DevelopmentConfig(Config):
