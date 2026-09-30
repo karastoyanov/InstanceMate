@@ -2,7 +2,7 @@ from flask import current_app
 
 from app.extensions import db
 from app.models.llm_profile import LlmProfile
-from app.services.crypto import encrypt_json
+from app.services.crypto import decrypt_json, encrypt_json
 
 
 def _secret() -> str:
@@ -40,3 +40,7 @@ def create_profile(user_id: int, label: str, provider: str, api_key: str) -> Llm
     db.session.add(profile)
     db.session.commit()
     return profile
+
+
+def get_api_key(profile: LlmProfile) -> str:
+    return decrypt_json(profile.credentials_encrypted, _secret())["api_key"]
