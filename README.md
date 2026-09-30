@@ -29,6 +29,10 @@ flowchart LR
 - **Frontend**: React + Tailwind CSS
 - **Deployment**: single VPS (details TBD)
 
+## Why LiteLLM
+
+InstanceMate is BYOK across three LLM providers (OpenAI, Anthropic, Google), each with its own SDK, message format, and set of exceptions. [LiteLLM](https://github.com/BerriAI/litellm) gives the backend one consistent function — `litellm.completion(model=..., messages=..., api_key=...)` — that works the same way regardless of provider: pass a different `model` string and LiteLLM translates the request/response and normalizes errors into one shared exception type. That means the backend's chat logic is written once and stays provider-agnostic instead of branching per provider everywhere it talks to an LLM; `backend/app/services/llm_client.py` is the thin wrapper around it.
+
 ## Repo layout
 
 ```
@@ -50,6 +54,8 @@ cp .env.example .env   # fill in values you need locally
 ```
 
 Backend, frontend, and mcp-server all read this same root `.env` (Flask/python-dotenv and the MCP server search upward for it automatically; the frontend is pointed at it via `envDir` in `vite.config.ts`) - no per-service copies needed.
+
+`.env` only holds infrastructure config (database, session secret, app URLs). It does **not** hold ServiceNow credentials or LLM API keys — those are per-user: once you've registered an account and logged in (see below), add a ServiceNow instance and an AI provider from the **Settings** page in the app itself. Each is encrypted and stored per-user in the database, not read from the environment.
 
 ### Backend (Flask)
 
@@ -93,6 +99,10 @@ python run.py                      # start the server at http://127.0.0.1:8001/m
 ```
 
 Only exposes a trivial `ping` tool for now (proves the wiring); real ServiceNow tools land in follow-up issues. Other useful commands from `mcp-server/`: `pytest` (run tests) and `ruff check .` (lint).
+
+### Using the app
+
+With the backend and frontend running, open `http://localhost:5173`, register an account, then go to **Settings** to connect a ServiceNow instance (OAuth or basic auth) and add an AI provider profile (OpenAI, Anthropic, or Google + your API key).
 
 ## Contributing
 
