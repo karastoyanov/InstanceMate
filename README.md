@@ -100,6 +100,8 @@ python run.py                      # start the server at http://127.0.0.1:8001/m
 
 Only exposes a trivial `ping` tool for now (proves the wiring); real ServiceNow tools land in follow-up issues. Other useful commands from `mcp-server/`: `pytest` (run tests) and `ruff check .` (lint).
 
+The backend reaches the MCP server at `MCP_SERVER_URL` (the full endpoint, including `/mcp`). To check the wiring end-to-end, start the MCP server, then from `backend/` run `flask mcp-check` - it lists the server's tools and calls `ping`. The backend passes the caller's ServiceNow credentials to each tool call in the request's `_meta` (see `mcp-server/app/servicenow_auth.py`), so the MCP server itself holds no per-user state.
+
 ### Using the app
 
 With the backend and frontend running, open `http://localhost:5173`, register an account, then go to **Settings** to connect a ServiceNow instance (OAuth or basic auth) and add an AI provider profile (OpenAI, Anthropic, or Google + your API key).
