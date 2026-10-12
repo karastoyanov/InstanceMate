@@ -1,3 +1,6 @@
+import asyncio
+import socket
+import threading
 import time
 from unittest.mock import patch
 
@@ -178,7 +181,8 @@ def test_call_tool_unreachable_server_is_tool_error(app):
 
     assert result.is_error is True
     assert (
-        result.content == "The tool server is unreachable right now. Try again later."
+        result.content
+        == "Error: The tool server is unreachable right now. Try again later."
     )
     assert time.monotonic() - start < 30
 
@@ -190,3 +194,117 @@ def test_call_tool_unreachable_server_does_not_leak_credentials(app):
 
     assert result.is_error is True
     assert "super-secret" not in result.content
+
+
+@pytest.fixture
+def silent_server_url():
+    """A server that accepts connections but never answers."""
+    listener = socket.socket()
+    listener.bind(("127.0.0.1", 0))
+    listener.listen()
+    accepted = []
+
+    def accept_forever():
+        while True:
+            try:
+                conn, _ = listener.accept()
+            except OSError:
+                return
+            accepted.append(conn)
+
+    threading.Thread(target=accept_forever, daemon=True).start()
+    yield f"http://127.0.0.1:{listener.getsockname()[1]}/mcp"
+    listener.close()
+    for conn in accepted:
+        conn.close()
+
+
+def _break_decryption(app):
+    # Simulates a rotated SESSION_SECRET: stored credentials no longer decrypt.
+    app.config["SESSION_SECRET"] = "a-different-secret"
+
+
+def test_error_results_start_with_error_prefix(app, mcp_server):
+    result = mcp_client.call_tool("lookup", {"table": "nope"}, server=mcp_server)
+    assert result.content.startswith(mcp_client.ERROR_PREFIX)
+
+    ok = mcp_client.call_tool("ping", {}, server=mcp_server)
+    assert not ok.content.startswith(mcp_client.ERROR_PREFIX)
+
+
+def test_call_tool_basic_profile_with_undecryptable_credentials(app, mcp_server):
+    profile = _basic_profile()
+    _break_decryption(app)
+
+    result = mcp_client.call_tool("ping", {}, profile=profile, server=mcp_server)
+
+    assert result.is_error is True
+    assert "Reconnect" in result.content
+
+
+def test_call_tool_oauth_profile_with_undecryptable_credentials(app, mcp_server):
+    profile = _oauth_profile()
+    _break_decryption(app)
+
+    result = mcp_client.call_tool("ping", {}, profile=profile, server=mcp_server)
+
+    assert result.is_error is True
+    assert "Reconnect" in result.content
+
+
+def test_call_tool_unknown_auth_type_is_tool_error(app, mcp_server):
+    profile = _basic_profile()
+    profile.auth_type = "saml"
+
+    result = mcp_client.call_tool("ping", {}, profile=profile, server=mcp_server)
+
+    assert result.is_error is True
+    assert "saml" in result.content
+
+
+def test_call_tool_not_configured_skips_oauth_refresh(app):
+    app.config["MCP_SERVER_URL"] = None
+    profile = _oauth_profile(expires_in=0)
+
+    with patch(
+        "app.services.servicenow_profile_service.servicenow_oauth.refresh_access_token"
+    ) as mock_refresh:
+        result = mcp_client.call_tool("ping", {}, profile=profile)
+
+    assert result.is_error is True
+    mock_refresh.assert_not_called()
+
+
+def test_call_tool_times_out_on_silent_server(app, silent_server_url):
+    app.config["MCP_TIMEOUT_SECONDS"] = 1
+
+    start = time.monotonic()
+    result = mcp_client.call_tool("ping", {}, server=silent_server_url)
+
+    assert result.is_error is True
+    assert time.monotonic() - start < 5
+
+
+def test_list_tools_times_out_on_silent_server(app, silent_server_url):
+    app.config["MCP_TIMEOUT_SECONDS"] = 1
+
+    start = time.monotonic()
+    with pytest.raises(McpUnavailableError):
+        mcp_client.list_tools(silent_server_url)
+    assert time.monotonic() - start < 5
+
+
+def test_call_from_running_event_loop_raises(app, mcp_server):
+    async def call_inside_loop():
+        mcp_client.call_tool("ping", {}, server=mcp_server)
+
+    with pytest.raises(RuntimeError, match="synchronous code"):
+        asyncio.run(call_inside_loop())
+
+
+def test_list_tools_from_running_event_loop_raises(app, mcp_server):
+    async def call_inside_loop():
+        mcp_client.list_tools(mcp_server)
+
+    with pytest.raises(RuntimeError, match="synchronous code"):
+        asyncio.run(call_inside_loop())

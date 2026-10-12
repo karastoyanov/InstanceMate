@@ -7,7 +7,8 @@ their ServiceNowProfile - #39) go along with every tool call in the
 request's `_meta`, never in the tool arguments the LLM sees or writes.
 
 Flask is synchronous, so each public function opens a short-lived MCP
-connection, does its one job and closes it again.
+connection, does its one job and closes it again. They must be called
+from synchronous code, not from inside a running event loop.
 """
 
 import asyncio
@@ -34,6 +35,10 @@ SERVICENOW_META_KEY = "instancemate/servicenow"
 # What the LLM sees when the MCP server can't be reached - deliberately
 # generic, so connection details never end up in the conversation.
 _UNREACHABLE_MESSAGE = "The tool server is unreachable right now. Try again later."
+_RECONNECT_MESSAGE = (
+    "The ServiceNow connection has expired. Reconnect this ServiceNow "
+    "profile in Settings and try again."
+)
 
 # Either a URL (the real server) or an in-process server (tests).
 McpTarget = str | MCPServer
@@ -51,10 +56,22 @@ class ServiceNowCredentialsError(Exception):
 class ToolResult:
     """Outcome of one tool call, ready to send back to the LLM as a tool
     message. Failures are results too (is_error=True), so the LLM can
-    react to them instead of the request crashing."""
+    react to them instead of the request crashing.
+
+    The OpenAI-style tool message LiteLLM sends has no error flag, so the
+    content of an error result always starts with ERROR_PREFIX - that is
+    how the LLM tells it apart from a successful result.
+    """
 
     content: str
     is_error: bool = False
+
+
+ERROR_PREFIX = "Error: "
+
+
+def _error(message: str) -> ToolResult:
+    return ToolResult(ERROR_PREFIX + message, is_error=True)
 
 
 def list_tools(server: McpTarget | None = None) -> list[dict]:
@@ -64,12 +81,14 @@ def list_tools(server: McpTarget | None = None) -> list[dict]:
     tools there's nothing for the LLM to call, so the caller decides
     whether to carry on without them.
     """
+    _ensure_no_running_loop()
+    target = _resolve_target(server)
     try:
-        tools = asyncio.run(_list_tools(_resolve_target(server)))
-    except McpUnavailableError:
-        raise
+        tools = asyncio.run(_list_tools(target, _timeout()))
     except Exception as exc:
-        logger.warning("Could not list MCP tools", exc_info=True)
+        logger.warning(
+            "Could not list MCP tools (%s)", type(exc).__name__, exc_info=True
+        )
         raise McpUnavailableError(_UNREACHABLE_MESSAGE) from exc
     return [to_llm_tool(tool) for tool in tools]
 
@@ -83,32 +102,43 @@ def call_tool(
     """Call one MCP tool by name, passing `profile`'s ServiceNow credentials
     through so the tool can act as the caller.
 
-    Never raises: an unreachable server, a missing tool or a failing tool
-    all come back as an error ToolResult for the LLM to see.
+    An unconfigured or unreachable server, unusable credentials, a missing
+    tool or a failing tool all come back as an error ToolResult for the
+    LLM to see. The only exception is a RuntimeError when this is called
+    from inside a running event loop - that is a bug in the caller.
     """
+    _ensure_no_running_loop()
+
+    # Resolve the server first: refreshing an OAuth token is wasted work
+    # when the call can't be made anyway.
+    try:
+        target = _resolve_target(server)
+    except McpUnavailableError as exc:
+        return _error(str(exc))
+
     meta = None
     if profile is not None:
         try:
             meta = {SERVICENOW_META_KEY: servicenow_credentials_meta(profile)}
         except ServiceNowCredentialsError as exc:
-            return ToolResult(str(exc), is_error=True)
+            return _error(str(exc))
 
     try:
-        target = _resolve_target(server)
-    except McpUnavailableError as exc:
-        return ToolResult(str(exc), is_error=True)
-
-    try:
-        result = asyncio.run(_call_tool(target, name, arguments or {}, meta))
+        result = asyncio.run(
+            _call_tool(target, name, arguments or {}, meta, _timeout())
+        )
     except MCPError as exc:
         # The server answered, but refused the call (unknown tool, invalid
         # arguments, ...) - its message is meant for the caller.
-        return ToolResult(exc.error.message, is_error=True)
-    except Exception:
-        logger.warning("MCP tool call %r failed", name, exc_info=True)
-        return ToolResult(_UNREACHABLE_MESSAGE, is_error=True)
+        return _error(exc.error.message)
+    except Exception as exc:
+        logger.warning(
+            "MCP tool call %r failed (%s)", name, type(exc).__name__, exc_info=True
+        )
+        return _error(_UNREACHABLE_MESSAGE)
 
-    return ToolResult(_result_text(result), is_error=result.is_error)
+    text = _result_text(result)
+    return _error(text) if result.is_error else ToolResult(text)
 
 
 def to_llm_tool(tool: Tool) -> dict:
@@ -131,22 +161,27 @@ def servicenow_credentials_meta(profile: ServiceNowProfile) -> dict:
     profile. OAuth profiles get a live access token (refreshed first if
     needed), basic-auth profiles their username/password.
 
-    Raises ServiceNowCredentialsError if an OAuth token can't be refreshed.
+    Raises ServiceNowCredentialsError if the stored credentials can't be
+    decrypted (e.g. SESSION_SECRET was rotated), an OAuth token can't be
+    refreshed, or the profile has an unknown auth type.
     """
     meta = {"instance_url": profile.instance_url, "auth_type": profile.auth_type}
 
     if profile.auth_type == "oauth":
         access_token = servicenow_profile_service.get_valid_access_token(profile)
         if access_token is None:
-            raise ServiceNowCredentialsError(
-                "The ServiceNow connection has expired. Reconnect this "
-                "ServiceNow profile in Settings and try again."
-            )
+            raise ServiceNowCredentialsError(_RECONNECT_MESSAGE)
         meta["access_token"] = access_token
-    else:
+    elif profile.auth_type == "basic":
         credentials = servicenow_profile_service.get_credentials(profile)
+        if credentials is None:
+            raise ServiceNowCredentialsError(_RECONNECT_MESSAGE)
         meta["username"] = credentials["username"]
         meta["password"] = credentials["password"]
+    else:
+        raise ServiceNowCredentialsError(
+            f"Unsupported ServiceNow auth type: {profile.auth_type!r}."
+        )
 
     return meta
 
@@ -158,8 +193,30 @@ def _resolve_target(server: McpTarget | None) -> McpTarget:
     return target
 
 
-async def _list_tools(target: McpTarget) -> list[Tool]:
-    async with Client(target) as client:
+def _ensure_no_running_loop() -> None:
+    # asyncio.run() fails inside a running loop (an async route, an asyncio
+    # worker). Raise that here, outside the catch-alls, so it shows up as
+    # the caller bug it is - not as "tool server is unreachable".
+    try:
+        asyncio.get_running_loop()
+    except RuntimeError:
+        return
+    raise RuntimeError(
+        "mcp_client must be called from synchronous code, not from inside "
+        "a running event loop."
+    )
+
+
+def _timeout() -> float:
+    return current_app.config["MCP_TIMEOUT_SECONDS"]
+
+
+async def _list_tools(target: McpTarget, timeout: float) -> list[Tool]:
+    # One deadline for the whole operation (connect, handshake, requests):
+    # without it, a server that accepts the connection but never answers
+    # ties up a worker for minutes, and the SDK's protocol probe alone has
+    # its own fixed 10 s timeout.
+    async with asyncio.timeout(timeout), Client(target) as client:
         tools: list[Tool] = []
         cursor = None
         while True:
@@ -171,9 +228,10 @@ async def _list_tools(target: McpTarget) -> list[Tool]:
 
 
 async def _call_tool(
-    target: McpTarget, name: str, arguments: dict, meta: dict | None
+    target: McpTarget, name: str, arguments: dict, meta: dict | None, timeout: float
 ) -> CallToolResult:
-    async with Client(target) as client:
+    # Same single deadline as _list_tools.
+    async with asyncio.timeout(timeout), Client(target) as client:
         return await client.call_tool(name, arguments, meta=meta)
 
 
