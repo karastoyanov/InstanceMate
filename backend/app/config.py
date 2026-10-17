@@ -12,6 +12,9 @@ class Config:
     SQLALCHEMY_DATABASE_URI = DATABASE_URL
     SQLALCHEMY_ENGINE_OPTIONS: ClassVar[dict] = {"pool_pre_ping": True}
     MCP_SERVER_URL = os.environ.get("MCP_SERVER_URL")
+    # How long to wait for the MCP server to answer one request before the
+    # call fails as "unreachable".
+    MCP_TIMEOUT_SECONDS = float(os.environ.get("MCP_TIMEOUT_SECONDS", "30"))
 
     # Backend's own externally-reachable base URL, used to build the fixed
     # OAuth redirect_uri registered in the user's ServiceNow instance.
