@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from app.extensions import db
 
@@ -21,7 +21,7 @@ class ServiceNowProfile(db.Model):
     # or a basic-auth username/password. Never included in to_public_dict().
     credentials_encrypted = db.Column(db.Text, nullable=False)
     created_at = db.Column(
-        db.DateTime, nullable=False, default=lambda: datetime.now(timezone.utc)
+        db.DateTime, nullable=False, default=lambda: datetime.now(UTC)
     )
 
     def to_public_dict(self) -> dict:

@@ -79,7 +79,9 @@ def create_basic_profile(
     return profile
 
 
-def get_credentials(profile: ServiceNowProfile) -> dict:
+def get_credentials(profile: ServiceNowProfile) -> dict | None:
+    """The profile's decrypted credentials, or None if they can't be
+    decrypted (e.g. SESSION_SECRET was rotated)."""
     return decrypt_json(profile.credentials_encrypted, _secret())
 
 
@@ -93,6 +95,9 @@ def get_valid_access_token(profile: ServiceNowProfile) -> str | None:
         return None
 
     credentials = get_credentials(profile)
+    if credentials is None:
+        # Can't be decrypted any more (e.g. SESSION_SECRET was rotated).
+        return None
     if credentials["expires_at"] - time.time() > _EXPIRY_LEEWAY_SECONDS:
         return credentials["access_token"]
 
